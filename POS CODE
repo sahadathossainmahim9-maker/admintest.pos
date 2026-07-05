@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monzu Plumbing Works — POS</title>
+<style>
+:root{
+  --steel-900:#12202b; --steel-800:#1b2f3d; --steel-700:#25404f;
+  --steel-100:#eef3f4; --paper:#f7f5f1; --copper:#b56a35; --copper-dark:#8f4f24;
+  --copper-light:#e8c9a3; --ink:#1c2427; --line:#d8d2c6;
+  --ok:#3f7a52; --ok-bg:#e6f0e8; --bad:#a4402f; --bad-bg:#f6e6e2; --warn:#a67c1c; --warn-bg:#f5edda;
+  --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--sans);background:var(--paper);color:var(--ink);}
+::selection{background:var(--copper-light);}
+a{color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+
+/* ---------- login ---------- */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:
+  radial-gradient(circle at 20% 20%, #1e3646 0%, var(--steel-900) 60%);}
+.login-card{background:var(--paper);width:380px;max-width:92vw;border-radius:4px;padding:34px 30px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);border-top:4px solid var(--copper);}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.brand-mark{width:34px;height:34px;flex:none;}
+.brand h1{font-size:17px;margin:0;letter-spacing:.3px;}
+.brand small{display:block;color:#7a746a;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px;}
+.field{margin-top:16px;}
+.field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#7a746a;margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:3px;background:#fff;font-size:14px;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--copper-light);border-color:var(--copper);}
+.btn{display:inline-block;border:none;border-radius:3px;padding:10px 16px;font-size:13.5px;font-weight:600;letter-spacing:.2px;}
+.btn-copper{background:var(--copper);color:#fff;}
+.btn-copper:hover{background:var(--copper-dark);}
+.btn-ghost{background:transparent;color:var(--steel-800);border:1px solid var(--line);}
+.btn-ghost:hover{background:var(--steel-100);}
+.btn-danger{background:var(--bad);color:#fff;}
+.btn-danger:hover{background:#8a3324;}
+.btn-sm{padding:6px 10px;font-size:12px;}
+.btn-block{width:100%;text-align:center;}
+.login-actions{margin-top:20px;display:flex;flex-direction:column;gap:8px;}
+.linklike{background:none;border:none;color:var(--copper-dark);font-size:12.5px;text-decoration:underline;padding:4px 0;text-align:left;}
+#loginError{color:var(--bad);font-size:12.5px;margin-top:10px;min-height:14px;}
+
+/* ---------- app shell ---------- */
+#app{display:none;min-height:100vh;}
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:230px;flex:none;background:var(--steel-900);color:#dbe4e8;padding:18px 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sidebar .brand{padding:0 18px 16px;border-bottom:1px solid #24404f;}
+.sidebar .brand h1{color:#fff;font-size:15px;}
+.sidebar .brand small{color:#8fa3ab;}
+.nav-group{margin-top:14px;}
+.nav-group-title{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:#5e7681;padding:6px 18px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;font-size:13.5px;color:#c9d6da;cursor:pointer;border-left:3px solid transparent;}
+.nav-item:hover{background:#1c313d;}
+.nav-item.active{background:#1c313d;border-left-color:var(--copper);color:#fff;font-weight:600;}
+.nav-icon{width:16px;text-align:center;font-family:var(--mono);opacity:.85;}
+.main{flex:1;min-width:0;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5;}
+.topbar h2{margin:0;font-size:17px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.chip{font-size:11.5px;background:var(--steel-100);border-radius:20px;padding:5px 12px;color:var(--steel-800);}
+.content{padding:22px 24px 60px;max-width:1200px;}
+
+/* ---------- generic ---------- */
+.card{background:#fff;border:1px solid var(--line);border-radius:5px;padding:18px 20px;margin-bottom:18px;}
+.card h3{margin:0 0 14px;font-size:14.5px;letter-spacing:.2px;}
+.grid{display:grid;gap:14px;}
+.grid-2{grid-template-columns:1fr 1fr;}
+.grid-3{grid-template-columns:1fr 1fr 1fr;}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+@media(max-width:900px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;} .sidebar{position:fixed;left:-230px;z-index:20;transition:left .2s;} .sidebar.open{left:0;} .shell{display:block;}}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:#7a746a;padding:8px 10px;border-bottom:2px solid var(--line);}
+td{padding:9px 10px;border-bottom:1px solid #ece7dd;vertical-align:top;}
+tr:hover td{background:#faf9f6;}
+.mono{font-family:var(--mono);}
+.right{text-align:right;}
+.center{text-align:center;}
+.muted{color:#8a8478;}
+.small{font-size:12px;}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;}
+.badge-ok{background:var(--ok-bg);color:var(--ok);}
+.badge-bad{background:var(--bad-bg);color:var(--bad);}
+.badge-warn{background:var(--warn-bg);color:var(--warn);}
+.stat{background:#fff;border:1px solid var(--line);border-radius:5px;padding:16px 18px;}
+.stat .num{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--steel-900);}
+.stat .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:#8a8478;margin-top:4px;}
+.divider-pipe{height:8px;background-repeat:repeat-x;background-size:14px 8px;
+  background-image:repeating-linear-gradient(90deg,var(--copper-light) 0 6px, transparent 6px 14px);
+  margin:16px 0;border-radius:2px;}
+.hr{border:none;border-top:1px solid var(--line);margin:16px 0;}
+.pill-row{display:flex;gap:8px;flex-wrap:wrap;}
+.toggle-row{display:flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;width:fit-content;}
+.toggle-row button{border:none;background:#fff;padding:6px 14px;font-size:12.5px;}
+.toggle-row button.active{background:var(--steel-900);color:#fff;}
+.modal-bg{position:fixed;inset:0;background:rgba(15,25,30,.5);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto;z-index:50;}
+.modal{background:#fff;border-radius:6px;width:520px;max-width:100%;padding:22px 24px;border-top:4px solid var(--copper);}
+.modal h3{margin-top:0;}
+.close-x{float:right;background:none;border:none;font-size:18px;color:#8a8478;}
+.items-table input, .items-table select{padding:6px 7px;font-size:12.5px;}
+.empty{padding:30px;text-align:center;color:#8a8478;font-size:13px;border:1px dashed var(--line);border-radius:6px;}
+.tag{background:var(--steel-100);border-radius:3px;padding:2px 7px;font-size:11px;margin-right:4px;}
+.invoice-box{border:1px solid var(--line);padding:20px;border-radius:6px;background:#fff;}
+.invoice-box .ihead{display:flex;justify-content:space-between;align-items:flex-start;}
+.invoice-box .ihead img{max-height:50px;}
+.searchbar{display:flex;gap:8px;margin-bottom:14px;}
+.searchbar input{flex:1;}
+#toast{position:fixed;bottom:20px;right:20px;background:var(--steel-900);color:#fff;padding:11px 18px;border-radius:5px;font-size:13px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.3);display:none;}
+.hamburger{display:none;background:none;border:none;font-size:20px;}
+@media(max-width:900px){.hamburger{display:block;}}
+label.inline{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:normal;text-transform:none;letter-spacing:0;color:var(--ink);}
+
+@media print {
+  body * { visibility: hidden; }
+  #invoicePrintArea, #invoicePrintArea * { visibility: visible; }
+  #invoicePrintArea { position: absolute; left: 0; top: 0; width: 100%; border: none; padding: 0; }
+  .modal-bg { background: transparent; position: absolute; }
+  .modal { border: none; box-shadow: none; padding: 0; width: 100%; max-width: 100%; }
+  .pill-row, .close-x { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#12202b"/><path d="M12 20h6v-6h4v6h6v4h-6v6h-4v-6h-6z" fill="#b56a35"/></svg>
+      <div><h1>Monzu Plumbing Works</h1><small>Point of Sale</small></div>
+    </div>
+    <div id="loginBody"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="shell">
+    <div class="sidebar" id="sidebar"></div>
+    <div class="main">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <button class="hamburger" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+          <h2 id="pageTitle"></h2>
+        </div>
+        <div class="topbar-right">
+          <div class="toggle-row" id="langToggle"></div>
+          <span class="chip" id="userChip"></span>
+          <button class="btn btn-ghost btn-sm" onclick="logout()" id="logoutBtn"></button>
+        </div>
+      </div>
+      <div class="content" id="content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================= ENVIRONMENT STORAGE FALLBACK ============================= */
+if (!window.storage) {
+  window.storage = {
+    get: function(key, isJson) {
+      return new Promise((resolve) => {
+        let val = localStorage.getItem(key);
+        resolve(val ? { value: val } : null);
+      });
+    },
+    set: function(key, val, isJson) {
+      return new Promise((resolve) => {
+        localStorage.setItem(key, val);
+        resolve(true);
+      });
+    }
+  };
+}
+
+/* ============================= I18N ============================= */
+const I18N = {
+en:{
+  dashboard:"Dashboard", quicksell:"Quick Sell", invoices:"Invoices", products:"Products & Stock",
+  purchases:"Purchase Stock", due:"Due Management", warranty:"Warranty Claims", premium:"Premium Care",
+  dealers:"Dealership", staff:"Staff Management", expenses:"Expenses", extraIncome:"Extra Income",
+  repair:"Repair Service", reports:"Accounting & Reports", notes:"Quick Notes", sms:"SMS Center",
+  settings:"Invoice & Company Settings", admins:"Admin Management", customerLookup:"Customer Lookup",
+  logout:"Log out", username:"Username", password:"Password", login:"Log in", forgot:"Forgot username or password?",
+  recoveryCode:"Recovery code", back:"Back", save:"Save", cancel:"Cancel", add:"Add", edit:"Edit", delete:"Delete",
+  search:"Search", name:"Name", phone:"Phone", address:"Address", total:"Total", discount:"Discount",
+  paid:"Paid", dueAmt:"Due", date:"Date", action:"Action", status:"Status", none:"None"
+},
+bn:{
+  dashboard:"ড্যাশবোর্ড", quicksell:"দ্রুত বিক্রয়", invoices:"ইনভয়েস", products:"পণ্য ও স্টক",
+  purchases:"স্টক ক্রয়", due:"বকেয়া ব্যবস্থাপনা", warranty:"ওয়ারেন্টি দাবি", premium:"প্রিমিয়াম কেয়ার",
+  dealers:"ডিলারশিপ", staff:"কর্মচারী ব্যবস্থাপনা", expenses:"খরচ", extraIncome:"অতিরিক্ত আয়",
+  repair:"মেরামত সেবা", reports:"হিসাব ও রিপোর্ট", notes:"দ্রুত নোট", sms:"এসএমএস সেন্টার",
+  settings:"ইনভয়েস ও কোম্পানি সেটিংস", admins:"অ্যাডমিন ব্যবস্থাপনা", customerLookup:"কাস্টমার খোঁজ",
+  logout:"লগ আউট", username:"ইউজারনেম", password:"পাসওয়ার্ড", login:"লগইন", forgot:"ইউজারনেম বা পাসওয়ার্ড ভুলে গেছেন?",
+  recoveryCode:"রিকভারি কোড", back:"ফিরে যান", save:"সংরক্ষণ", cancel:"বাতিল", add:"যোগ করুন", edit:"সম্পাদনা",
+  delete:"মুছুন", search:"খুঁজুন", name:"নাম", phone:"ফোন", address:"ঠিকানা", total:"মোট", discount:"ছাড়",
+  paid:"পরিশোধিত", dueAmt:"বকেয়া", date:"তারিখ", action:"অ্যাকশন", status:"অবস্থা", none:"কোনটি না"
+}};
+let LANG = 'en';
+function t(k){ return (I18N[LANG] && I18N[LANG][k]) || (I18N.en[k]) || k; }
+
+/* ============================= STORAGE ============================= */
+const CORE_KEY = 'pos_core_v1';
+const SETTINGS_KEY = 'pos_settings_v1';
+
+function defaultCore(){
+  return {
+    products:[], sales:[], purchases:[], customers:[], dealers:[],
+    staff:[], attendance:[], advances:[], expenses:[], extraIncome:[],
+    repairs:[], notes:[], warrantyClaims:[], premiumCare:[], smsLogs:[],
+    seq:{invoice:1000, repair:500}
+  };
+}
+function defaultSettings(){
+  return {
+    company:{ name:"Monzu Plumbing Works", address:"Chittagong Port, Chattogram, Bangladesh", phoneNum:"018XXXXXXXX", logo:"", invoiceTitle:"SALES INVOICE", footerNote:"Thank you for your business." },
+    admins:[{id:'1', username:'admin', password:'1234', name:'Super Admin', role:'Super Admin', isSuper:true}],
+    repairCategories:["Coil Winding","Bearing","Water Seal","Impeller","Motor Set","Coil Set"],
+    smsTemplates:{
+      dueReminder:"Dear {name}, you have a due of Tk {amount} against invoice {invoice}. Please clear it soon. - {company}",
+      thankYou:"Dear {name}, thank you for your purchase (Invoice {invoice}). - {company}"
+    }
+  };
+}
+let DB = defaultCore();
+let SETTINGS = defaultSettings();
+let CURRENT_ADMIN = null;
+
+async function loadAll(){
+  try{
+    const c = await window.storage.get(CORE_KEY, true);
+    if(c && c.value) DB = Object.assign(defaultCore(), JSON.parse(c.value));
+  }catch(e){ }
+  try{
+    const s = await window.storage.get(SETTINGS_KEY, true);
+    if(s && s.value) SETTINGS = Object.assign(defaultSettings(), JSON.parse(s.value));
+  }catch(e){ }
+  try{
+    const l = await window.storage.get('pos_lang_pref', false);
+    if(l && l.value) LANG = l.value;
+  }catch(e){}
+}
+async function saveCore(){
+  try{ await window.storage.set(CORE_KEY, JSON.stringify(DB), true); }
+  catch(e){ showToast('Storage error — changes may not be saved.'); }
+}
+async function saveSettings(){
+  try{ await window.storage.set(SETTINGS_KEY, JSON.stringify(SETTINGS), true); }
+  catch(e){ showToast('Storage error — changes may not be saved.'); }
+}
+async function saveLangPref(){
+  try{ await window.storage.set('pos_lang_pref', LANG, false); }catch(e){}
+}
+
+/* ============================= HELPERS ============================= */
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function money(n){ n = Number(n)||0; return n.toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:2}); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function nowISO(){ return new Date().toISOString(); }
+function esc(s){ return (s===undefined||s===null)?'':String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.display='block';
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>{el.style.display='none';},2600);
+}
+function genInvoiceNo(){ DB.seq.invoice++; return 'INV-'+DB.seq.invoice; }
+function genRepairCode(){ DB.seq.repair++; return 'REP-'+DB.seq.repair; }
+function findProduct(id){ return DB.products.find(p=>p.id===id); }
+function findCustomerByPhone(phone){ return DB.customers.find(c=>c.phone===phone); }
+function upsertCustomer(name,phone,address){
+  if(!phone) return null;
+  let c = findCustomerByPhone(phone);
+  if(!c){ c = {id:uid(), name:name||'', phone, address:address||'', dueBalance:0}; DB.customers.push(c); }
+  else { if(name) c.name = name; if(address) c.address = address; }
+  return c;
+}
+function warrantyLabel(p){
+  if(!p || !p.warrantyValue) return t('none');
+  const unitMap = {days:{en:'day(s)',bn:'দিন'}, months:{en:'month(s)',bn:'মাস'}, years:{en:'year(s)',bn:'বছর'}};
+  const u = unitMap[p.warrantyUnit] || unitMap.months;
+  return p.warrantyValue + ' ' + (u[LANG]||u.en);
+}
+function warrantyExpiry(saleDate, p){
+  if(!p || !p.warrantyValue) return null;
+  const d = new Date(saleDate);
+  if(p.warrantyUnit==='days') d.setDate(d.getDate()+Number(p.warrantyValue));
+  else if(p.warrantyUnit==='years') d.setFullYear(d.getFullYear()+Number(p.warrantyValue));
+  else d.setMonth(d.getMonth()+Number(p.warrantyValue));
+  return d;
+}
+function dateInRange(dateStr, from, to){
+  const d = new Date(dateStr.slice(0,10));
+  if(from && d < new Date(from)) return false;
+  if(to && d > new Date(to)) return false;
+  return true;
+}
+
+/* ============================= AUTH ============================= */
+function renderLogin(){
+  const body = document.getElementById('loginBody');
+  body.innerHTML = `
+    <div class="field"><label>${t('username')}</label><input id="loginUser" placeholder="admin" value="admin"></div>
+    <div class="field"><label>${t('password')}</label><input id="loginPass" type="password" placeholder="••••" value="1234"></div>
+    <div id="loginError"></div>
+    <div class="login-actions">
+      <button class="btn btn-copper btn-block" onclick="doLogin()">${t('login')}</button>
+      <button class="linklike" onclick="renderForgot()">${t('forgot')}</button>
+    </div>
+    <p class="small muted" style="margin-top:16px;">Default: admin / 1234</p>
+  `;
+  document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+}
+function renderForgot(){
+  const body = document.getElementById('loginBody');
+  body.innerHTML = `
+    <p class="small muted">${LANG==='bn'?'পুনরুদ্ধার কোড লিখুন। এটি ব্যবসার মালিকের কাছে সংরক্ষিত একটি বিশেষ সংখ্যা।':'Enter the recovery code kept by the business owner to view all admin credentials.'}</p>
+    <div class="field"><label>${t('recoveryCode')}</label><input id="recCode" placeholder="••••••"></div>
+    <div id="loginError"></div>
+    <div id="recResult"></div>
+    <div class="login-actions">
+      <button class="btn btn-copper btn-block" onclick="checkRecovery()">${LANG==='bn'?'যাচাই করুন':'Verify'}</button>
+      <button class="linklike" onclick="renderLogin()">${t('back')}</button>
+    </div>
+  `;
+}
+function checkRecovery(){
+  const code = document.getElementById('recCode').value.trim();
+  const err = document.getElementById('loginError');
+  if(code !== '504104'){ err.textContent = LANG==='bn'?'ভুল কোড।':'Incorrect code.'; return; }
+  err.textContent='';
+  const rows = SETTINGS.admins.map(a=>`<tr><td>${esc(a.username)}</td><td class="mono">${esc(a.password)}</td><td>${esc(a.role)}</td></tr>`).join('');
+  document.getElementById('recResult').innerHTML = `
+    <table style="margin-top:10px;"><thead><tr><th>${t('username')}</th><th>${t('password')}</th><th>Role</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+function doLogin(){
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const admin = SETTINGS.admins.find(a=>a.username===u && a.password===p);
+  const err = document.getElementById('loginError');
+  if(!admin){ err.textContent = LANG==='bn'?'ভুল ইউজারনেম বা পাসওয়ার্ড।':'Invalid username or password.'; return; }
+  CURRENT_ADMIN = admin;
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='block';
+  boot();
+}
+function logout(){
+  CURRENT_ADMIN = null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  renderLogin();
+}
+
+/* ============================= NAV / SHELL ============================= */
+function navSections(){
+  return [
+    {title:LANG==='bn'?'প্রধান':'Main', items:[
+      ['dashboard','dashboard','⌂'],
+      ['quicksell','quicksell','＋'],
+      ['invoices','invoices','▤'],
+      ['customerLookup','customerLookup','⌕'],
+    ]},
+    {title:LANG==='bn'?'ইনভেন্টরি':'Inventory', items:[
+      ['products','products','▣'],
+      ['purchases','purchases','↧'],
+    ]},
+    {title:LANG==='bn'?'অর্থ':'Finance', items:[
+      ['due','due','৳'],
+      ['expenses','expenses','−'],
+      ['extraIncome','extraIncome','+'],
+      ['reports','reports','▦'],
+    ]},
+    {title:LANG==='bn'?'সেবা':'Service', items:[
+      ['repair','repair','⚙'],
+      ['warranty','warranty','🛡'],
+      ['premium','premium','★'],
+    ]},
+    {title:LANG==='bn'?'সম্পর্ক':'Relations', items:[
+      ['dealers','dealers','⇄'],
+      ['staff','staff','◍'],
+    ]},
+    {title:LANG==='bn'?'টুলস':'Tools', items:[
+      ['notes','notes','✎'],
+      ['sms','sms','✉'],
+      ['settings','settings','⚑'],
+      ['admins','admins','☺'],
+    ]},
+  ];
+}
+let currentPage = 'dashboard';
+function buildSidebar(){
+  const sb = document.getElementById('sidebar');
+  let html = `<div class="brand">
+    <svg class="brand-mark" width="30" height="30" viewBox="0 0 40 40"><circle cx="20" cy="20" r="19" fill="#b56a35"/><path d="M12 20h6v-6h4v6h6v4h-6v6h-4v-6h-6z" fill="#12202b"/></svg>
+    <div><h1>${esc(SETTINGS.company.name||'POS')}</h1><small>Point of Sale</small></div>
+  </div>`;
+  navSections().forEach(sec=>{
+    html += `<div class="nav-group"><div class="nav-group-title">${sec.title}</div>`;
+    sec.items.forEach(([key,labelKey,icon])=>{
+      html += `<div class="nav-item ${currentPage===key?'active':''}" onclick="goTo('${key}')"><span class="nav-icon">${icon}</span>${t(labelKey)}</div>`;
+    });
+    html += `</div>`;
+  });
+  sb.innerHTML = html;
+}
+function buildLangToggle(){
+  document.getElementById('langToggle').innerHTML = `
+    <button class="${LANG==='en'?'active':''}" onclick="setLang('en')">EN</button>
+    <button class="${LANG==='bn'?'active':''}" onclick="setLang('bn')">বাং</button>`;
+}
+function setLang(l){ LANG = l; saveLangPref(); goTo(currentPage); }
+function goTo(page){
+  currentPage = page;
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('pageTitle').textContent = t(page);
+  document.getElementById('userChip').textContent = (CURRENT_ADMIN? CURRENT_ADMIN.name+' · '+CURRENT_ADMIN.role : '');
+  document.getElementById('logoutBtn').textContent = t('logout');
+  buildSidebar(); buildLangToggle();
+  const fn = PAGES[page];
+  document.getElementById('content').innerHTML = fn ? fn() : '<div class="empty">Not found</div>';
+  if(page === 'quicksell') { rerenderCartOnly(); }
+}
+function boot(){ goTo('dashboard'); }
+
+/* ============================= DASHBOARD ============================= */
+function PAGE_dashboard(){
+  const today = todayStr();
+  const salesToday = DB.sales.filter(s=>s.date.slice(0,10)===today);
+  const revenueToday = salesToday.reduce((a,s)=>a+s.total,0);
+  const dueToday = salesToday.reduce((a,s)=>a+s.dueAmount,0);
+  const totalDueAll = DB.sales.reduce((a,s)=>a+s.dueAmount,0);
+  const lowStock = DB.products.filter(p=>Number(p.stock)<=Number(p.lowStock||3));
+  return `
+  <div class="grid grid-4">
+    <div class="stat"><div class="num">৳ ${money(revenueToday)}</div><div class="lbl">${LANG==='bn'?"আজকের বিক্রয়":"Sales Today"}</div></div>
+    <div class="stat"><div class="num">${salesToday.length}</div><div class="lbl">${LANG==='bn'?"আজকের ইনভয়েস":"Invoices Today"}</div></div>
+    <div class="stat"><div class="num">৳ ${money(dueToday)}</div><div class="lbl">${LANG==='bn'?"আজকের বকেয়া":"New Due Today"}</div></div>
+    <div class="stat"><div class="num">৳ ${money(totalDueAll)}</div><div class="lbl">${LANG==='bn'?"মোট বকেয়া":"Total Outstanding Due"}</div></div>
+  </div>
+  <div class="divider-pipe"></div>
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>${t('quicksell')}</h3>
+      <p class="small muted">${LANG==='bn'?'দ্রুত একটি নতুন বিক্রয় এন্ট্রি করুন।':'Jump straight into a new sale entry.'}</p>
+      <button class="btn btn-copper" onclick="goTo('quicksell')">${LANG==='bn'?'+ নতুন বিক্রয়':'+ New Sale'}</button>
+    </div>
+    <div class="card">
+      <h3>${LANG==='bn'?'কম স্টক সতর্কতা':'Low Stock Alerts'}</h3>
+      ${lowStock.length? `<table><thead><tr><th>${LANG==='bn'?'পণ্য':'Product'}</th><th class="right">${LANG==='bn'?'স্টক':'Stock'}</th></tr></thead><tbody>
+        ${lowStock.map(p=>`<tr><td>${esc(p.name)} <span class="tag">${esc(p.model||'')}</span></td><td class="right" style="color:var(--bad); font-weight:bold;">${p.stock}</td></tr>`).join('')}
+      </tbody></table>` : `<div class="empty">${LANG==='bn'?'সব ঠিক আছে':'All stocked up'}</div>`}
+    </div>
+  </div>
+  `;
+}
+
+/* ============================= PRODUCTS & STOCK ============================= */
+function PAGE_products(){
+  return `
+  <div class="card">
+    <h3>${LANG==='bn'?'নতুন পণ্য যোগ করুন':'Add New Product'}</h3>
+    <div class="grid grid-4">
+      <div class="field"><label>${t('name')}</label><input id="pName" placeholder="Submersible Pump / Wire"></div>
+      <div class="field"><label>Model</label><input id="pModel" placeholder="3HP / Copper Loop"></div>
+      <div class="field"><label>Category</label><input id="pCat" placeholder="Pump / Spares"></div>
+      <div class="field"><label>${LANG==='bn'?'ক্রয় মূল্য':'Purchase Price'}</label><input id="pBuy" type="number"></div>
+      <div class="field"><label>${LANG==='bn'?'বিক্রয় মূল্য':'Sale Price'}</label><input id="pSell" type="number"></div>
+      <div class="field"><label>${LANG==='bn'?'প্রাথমিক স্টক':'Opening Stock'}</label><input id="pStock" type="number" value="0"></div>
+      <div class="field"><label>${LANG==='bn'?'ওয়ারেন্টি সংখ্যা':'Warranty Value'}</label><input id="pWval" type="number" placeholder="e.g. 6"></div>
+      <div class="field"><label>${LANG==='bn'?'ওয়ারেন্টি একক':'Warranty Unit'}</label>
+        <select id="pWunit"><option value="days">${LANG==='bn'?'দিন':'Days'}</option><option value="months" selected>${LANG==='bn'?'মাস':'Months'}</option><option value="years">${LANG==='bn'?'বছর':'Years'}</option></select>
+      </div>
+    </div>
+    <div style="margin-top:12px;"><button class="btn btn-copper" onclick="addProduct()">${t('add')}</button></div>
+  </div>
+  <div class="card">
+    <h3>${t('products')}</h3>
+    ${DB.products.length? `<table><thead><tr>
+      <th>${t('name')}</th><th>Model</th><th>Category</th><th class="right">Buy</th><th class="right">Sell</th>
+      <th class="right">Stock</th><th>Warranty</th><th class="right">${t('action')}</th></tr></thead><tbody>
+      ${DB.products.map(p=>`<tr>
+        <td><b>${esc(p.name)}</b></td><td>${esc(p.model||'')}</td><td>${esc(p.category||'')}</td>
+        <td class="right mono">৳${money(p.buyPrice)}</td><td class="right mono">৳${money(p.sellPrice)}</td>
+        <td class="right mono ${Number(p.stock) <= Number(p.lowStock||3) ? 'badge-bad':''}">${p.stock}</td><td>${warrantyLabel(p)}</td>
+        <td class="right">
+          <button class="btn btn-ghost btn-sm" onclick="adjustStockPrompt('${p.id}')">${LANG==='bn'?'স্টক':'Stock ±'}</button>
+          <button class="btn btn-ghost btn-sm" onclick="editProduct('${p.id}')">${t('edit')}</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">${t('delete')}</button>
+        </td>
+      </tr>`).join('')}
+    </tbody></table>` : `<div class="empty">${LANG==='bn'?'কোনো পণ্য নেই':'No products yet'}</div>`}
+  </div>`;
+}
+function addProduct(){
+  const name = document.getElementById('pName').value.trim();
+  if(!name){ showToast(LANG==='bn'?'পণ্যের নাম দিন':'Enter a product name'); return; }
+  DB.products.push({
+    id:uid(), name, model:document.getElementById('pModel').value.trim(),
+    category:document.getElementById('pCat').value.trim(),
+    buyPrice:Number(document.getElementById('pBuy').value)||0,
+    sellPrice:Number(document.getElementById('pSell').value)||0,
+    stock:Number(document.getElementById('pStock').value)||0,
+    lowStock:3,
+    warrantyValue:Number(document.getElementById('pWval').value)||0,
+    warrantyUnit:document.getElementById('pWunit').value
+  });
+  saveCore(); showToast(LANG==='bn'?'পণ্য যোগ হয়েছে':'Product added'); goTo('products');
+}
+function editProduct(id){
+  const p = findProduct(id); if(!p) return;
+  const html = `
+    <div class="grid grid-2">
+      <div class="field"><label>${t('name')}</label><input id="epName" value="${esc(p.name)}"></div>
+      <div class="field"><label>Model</label><input id="epModel" value="${esc(p.model||'')}"></div>
+      <div class="field"><label>Category</label><input id="epCat" value="${esc(p.category||'')}"></div>
+      <div class="field"><label>Buy Price</label><input id="epBuy" type="number" value="${p.buyPrice}"></div>
+      <div class="field"><label>Sell Price</label><input id="epSell" type="number" value="${p.sellPrice}"></div>
+      <div class="field"><label>Low Stock Alert</label><input id="epLow" type="number" value="${p.lowStock||3}"></div>
+      <div class="field"><label>Warranty Value</label><input id="epWval" type="number" value="${p.warrantyValue||0}"></div>
+      <div class="field"><label>Warranty Unit</label><select id="epWunit">
+        <option value="days" ${p.warrantyUnit==='days'?'selected':''}>Days</option>
+        <option value="months" ${p.warrantyUnit==='months'?'selected':''}>Months</option>
+        <option value="years" ${p.warrantyUnit==='years'?'selected':''}>Years</option></select></div>
+    </div>`;
+  openModal(t('edit')+' — '+p.name, html, ()=>{
+    p.name = document.getElementById('epName').value.trim() || p.name;
+    p.model = document.getElementById('epModel').value.trim();
+    p.category = document.getElementById('epCat').value.trim();
+    p.buyPrice = Number(document.getElementById('epBuy').value)||0;
+    p.sellPrice = Number(document.getElementById('epSell').value)||0;
+    p.lowStock = Number(document.getElementById('epLow').value)||3;
+    p.warrantyValue = Number(document.getElementById('epWval').value)||0;
+    p.warrantyUnit = document.getElementById('epWunit').value;
+    saveCore(); showToast(t('save')); goTo('products');
+  });
+}
+function deleteProduct(id){
+  if(!confirm(LANG==='bn'?'মুছে ফেলতে চান?':'Delete this product?')) return;
+  DB.products = DB.products.filter(p=>p.id!==id);
+  saveCore(); goTo('products');
+}
+function adjustStockPrompt(id){
+  const p = findProduct(id); if(!p) return;
+  const html = `
+    <p class="small muted">${LANG==='bn'?'বর্তমান স্টক':'Current stock'}: <b>${p.stock}</b></p>
+    <div class="field"><label>${LANG==='bn'?'পরিবর্তন (+/-)':'Adjustment (+/-)'}</label><input id="stAdj" type="number" placeholder="e.g. 5 or -2"></div>`;
+  openModal(LANG==='bn'?'স্টক সমন্বয়':'Adjust Stock', html, ()=>{
+    const adj = Number(document.getElementById('stAdj').value)||0;
+    p.stock = Math.max(0, Number(p.stock) + adj);
+    saveCore(); showToast(LANG==='bn'?'স্টক আপডেট হয়েছে':'Stock updated'); goTo('products');
+  });
+}
+
+/* ============================= PURCHASES ============================= */
+function PAGE_purchases(){
+  const opts = DB.products.map(p=>`<option value="${p.id}">${esc(p.name)} ${esc(p.model||'')} (Stock: ${p.stock})</option>`).join('');
+  return `
+  <div class="card">
+    <h3>${LANG==='bn'?'স্টক ক্রয় এন্ট্রি':'Record a Purchase'}</h3>
+    <div class="grid grid-4">
+      <div class="field"><label>Product</label><select id="buyProd">${opts||'<option value="">—</option>'}</select></div>
+      <div class="field"><label>Qty</label><input id="buyQty" type="number" value="1"></div>
+      <div class="field"><label>Unit Cost (৳)</label><input id="buyCost" type="number"></div>
+      <div class="field"><label>Supplier / Vendor</label><input id="buySupplier"></div>
+    </div>
+    <div style="margin-top:12px;"><button class="btn btn-copper" onclick="recordPurchase()">${LANG==='bn'?'স্টকে যোগ করুন':'Add to Stock'}</button></div>
+  </div>
+  <div class="card">
+    <h3>${LANG==='bn'?'ক্রয় ইতিহাস':'Purchase History'}</h3>
+    ${DB.purchases.length? `<table><thead><tr><th>${t('date')}</th><th>Product</th><th class="right">Qty</th><th class="right">Cost</th><th class="right">Total</th><th>Supplier</th></tr></thead><tbody>
+      ${DB.purchases.slice().reverse().map(pu=>`<tr><td>${pu.date.slice(0,10)}</td><td><b>${esc(pu.productName)}</b></td><td class="right">${pu.qty}</td><td class="right mono">৳${money(pu.cost)}</td><td class="right mono">৳${money(pu.qty*pu.cost)}</td><td>${esc(pu.supplier||'')}</td></tr>`).join('')}
+    </tbody></table>`: `<div class="empty">${LANG==='bn'?'কোনো ক্রয় নেই':'No purchases yet'}</div>`}
+  </div>`;
+}
+function recordPurchase(){
+  const pid = document.getElementById('buyProd').value;
+  const p = findProduct(pid);
+  if(!p){ showToast(LANG==='bn'?'আগে একটি পণ্য যোগ করুন':'Add a product first'); return; }
+  const qty = Number(document.getElementById('buyQty').value)||0;
+  const cost = Number(document.getElementById('buyCost').value)||0;
+  if(qty<=0){ showToast('Enter valid quantity'); return; }
+  p.stock = Number(p.stock) + qty;
+  if(cost>0) p.buyPrice = cost;
+  DB.purchases.push({id:uid(), date:nowISO(), productId:pid, productName:p.name, qty, cost, supplier:document.getElementById('buySupplier').value.trim()});
+  saveCore(); showToast(LANG==='bn'?'স্টক আপডেট হয়েছে':'Stock added'); goTo('purchases');
+}
+
+/* ============================= QUICK SELL / INVOICE ============================= */
+let cart = [];
+function PAGE_quicksell(){
+  const prodOpts = DB.products.map(p=>`<option value="${p.id}">${esc(p.name)} ${esc(p.model||'')} — Stock ${p.stock}</option>`).join('');
+  return `
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>${LANG==='bn'?'গ্রাহকের তথ্য':'Customer Info'}</h3>
+      <div class="grid grid-2">
+        <div class="field"><label>${t('phone')}</label><input id="csPhone" placeholder="018XXXXXXXX" onblur="autofillCustomer()"></div>
+        <div class="field"><label>${t('name')}</label><input id="csName" placeholder="Walk-in Client"></div>
+      </div>
+      <div class="field"><label>${t('address')}</label><input id="csAddress"></div>
+      <div class="grid grid-2">
+        <div class="field"><label>Customer Type</label>
+          <select id="csType" onchange="toggleCustomerType()">
+            <option value="retail">${LANG==='bn'?'সাধারণ গ্রাহক':'Retail Client'}</option>
+            <option value="dealer">${LANG==='bn'?'ডিলার':'B2B Dealer'}</option>
+          </select>
+        </div>
+        <div id="dealerPick" class="field" style="display:none;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>${LANG==='bn'?'পণ্য যোগ করুন':'Add Item'}</h3>
+      <div class="field"><label>Product</label><select id="itProd" onchange="syncProductPrice()">${prodOpts || '<option value="">No products loaded</option>'}</select></div>
+      <div class="grid grid-2">
+        <div class="field"><label>Qty</label><input id="itQty" type="number" value="1"></div>
+        <div class="field"><label>Price Per Unit (৳)</label><input id="itPrice" type="number"></div>
+      </div>
+      <button class="btn btn-ghost btn-block" style="margin-top:15px;" onclick="addToCart()">${LANG==='bn'?'কার্টে যোগ করুন':'Add to Cart'}</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>${LANG==='bn'?'কার্ট':'Cart Items'}</h3>
+    <div id="cartTableWrap"></div>
+  </div>
+
+  <div class="card">
+    <h3>${LANG==='bn'?'পেমেন্ট ও হিসাব':'Payment and Finalization'}</h3>
+    <div class="grid grid-3">
+      <div class="field"><label>${t('discount')} (৳)</label><input id="csDiscount" type="number" value="0" oninput="rerenderCartOnly()"></div>
+      <div class="field"><label>Payment Action</label>
+        <select id="paymentStatus" onchange="rerenderCartOnly()">
+          <option value="full">${LANG==='bn'?'সম্পূর্ণ পরিশোধ':'Full Settlement'}</option>
+          <option value="partial">${LANG==='bn'?'আংশিক পরিশোধ':'Partial Payment'}</option>
+          <option value="due">${LANG==='bn'?'সম্পূর্ণ বকেয়া':'Full Due'}</option>
+        </select>
+      </div>
+      <div class="field" id="paidNowWrap" style="display:none;"><label>${LANG==='bn'?'এখন পরিশোধ':'Amount Paid Now'}</label><input id="paidNow" type="number" value="0" oninput="rerenderCartOnly()"></div>
+    </div>
+    <div class="grid grid-2" id="methodRow" style="margin-top:10px;">
+      <div class="field" id="methodWrap"><label>${LANG==='bn'?'পেমেন্ট মাধ্যম':'Payment Method'}</label>
+        <select id="payMethod" onchange="rerenderCartOnly()">
+          <option value="cash">${LANG==='bn'?'নগদ':'Cash'}</option>
+          <option value="bank">${LANG==='bn'?'ব্যাংক':'Bank Wire'}</option>
+          <option value="bkash">bKash MFS</option>
+        </select>
+      </div>
+      <div class="field" id="refWrap" style="display:none;"><label>Ref Number / Phone</label><input id="payRef" placeholder="TxID or Account"></div>
+    </div>
+    <div id="paySummary"></div>
+    <button class="btn btn-copper btn-block" style="margin-top:15px; font-size:16px;" onclick="finalizeSale()">${LANG==='bn'?'ইনভয়েস তৈরি করুন':'Save and Print Invoice'}</button>
+  </div>
+  `;
+}
+function syncProductPrice(){
+  const pid = document.getElementById('itProd').value;
+  const p = findProduct(pid);
+  if(p) { document.getElementById('itPrice').value = p.sellPrice; }
+}
+function toggleCustomerType(){
+  const type = document.getElementById('csType').value;
+  const div = document.getElementById('dealerPick');
+  if(type === 'dealer'){
+    div.style.display = 'block';
+    div.innerHTML = `<label>Select Dealer Link</label><select id="dealerSelect" onchange="autofillDealerData()">
+      <option value="">-- Choose --</option>
+      ${DB.dealers.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('')}
+    </select>`;
+  } else {
+    div.style.display = 'none';
+    div.innerHTML = '';
+  }
+}
+function autofillDealerData(){
+  const did = document.getElementById('dealerSelect').value;
+  const d = DB.dealers.find(x=>x.id===did);
+  if(d){
+    document.getElementById('csName').value = d.name;
+    document.getElementById('csPhone').value = d.phone;
+    document.getElementById('csAddress').value = d.address;
+  }
+}
+function addToCart(){
+  const pid = document.getElementById('itProd').value;
+  const p = findProduct(pid);
+  if(!p){ showToast('Select a valid product'); return; }
+  const qty = Number(document.getElementById('itQty').value)||1;
+  const price = Number(document.getElementById('itPrice').value) || p.sellPrice;
+  cart.push({productId:pid, name:p.name+(p.model?' ('+p.model+')':''), qty, price});
+  rerenderCartOnly();
+}
+function removeFromCart(i){ cart.splice(i,1); rerenderCartOnly(); }
+function autofillCustomer(){
+  const phone = document.getElementById('csPhone').value.trim();
+  const c = findCustomerByPhone(phone);
+  if(c){ document.getElementById('csName').value = c.name; document.getElementById('csAddress').value = c.address; }
+}
+function rerenderCartOnly(){
+  const wrap = document.getElementById('cartTableWrap');
+  if(!cart.length){
+    if(wrap) wrap.innerHTML = `<div class="empty">${LANG==='bn'?'কার্ট খালি':'Cart is empty'}</div>`;
+  } else {
+    if(wrap) wrap.innerHTML = `<table class="items-table"><thead><tr><th>SL</th><th>Item Detail</th><th class="right">Qty</th><th class="right">Unit Price</th><th class="right">${t('total')}</th><th>Remove</th></tr></thead><tbody>
+      ${cart.map((it,i)=>`<tr><td>${i+1}</td><td><b>${esc(it.name)}</b></td><td class="right">${it.qty}</td><td class="right mono">৳${money(it.price)}</td><td class="right mono">৳${money(it.qty*it.price)}</td>
+      <td class="right"><button class="btn btn-danger btn-sm" onclick="removeFromCart(${i})">✕</button></td></tr>`).join('')}
+    </tbody></table>`;
+  }
+
+  const status = document.getElementById('paymentStatus') ? document.getElementById('paymentStatus').value : 'full';
+  if(document.getElementById('paidNowWrap')) document.getElementById('paidNowWrap').style.display = status==='partial' ? 'block':'none';
+  if(document.getElementById('methodRow')) document.getElementById('methodRow').style.display = status==='due' ? 'none':'grid';
+
+  const subtotal = cart.reduce((a,it)=>a+it.qty*it.price,0);
+  const discount = Number(document.getElementById('csDiscount') ? document.getElementById('csDiscount').value : 0)||0;
+  const total = Math.max(0, subtotal-discount);
+  
+  let paidNow = 0;
+  if(status==='full') paidNow = total;
+  else if(status==='partial') paidNow = Number(document.getElementById('paidNow') ? document.getElementById('paidNow').value : 0)||0;
+  
+  const due = Math.max(0, total-paidNow);
+  const summary = document.getElementById('paySummary');
+  if(summary){
+    summary.innerHTML = `
+      <div class="hr"></div>
+      <table style="max-width:340px; margin-left:auto; font-size:14px;"><tbody>
+      <tr><td>Gross Subtotal:</td><td class="right mono">৳ ${money(subtotal)}</td></tr>
+      <tr><td>Special Discount:</td><td class="right mono">- ৳ ${money(discount)}</td></tr>
+      <tr><td><b>Net Payable:</b></td><td class="right mono"><b>৳ ${money(total)}</b></td></tr>
+      <tr><td>Paid Amount:</td><td class="right mono" style="color:var(--ok); font-weight:bold;">৳ ${money(paidNow)}</td></tr>
+      <tr><td>Current Balance Due:</td><td class="right mono" style="color:${due>0?'var(--bad)':'var(--ok)'}; font-weight:bold;">৳ ${money(due)}</td></tr>
+      </tbody></table>`;
+  }
+}
+function finalizeSale(){
+  if(!cart.length){ showToast(LANG==='bn'?'কার্টে পণ্য যোগ করুন':'Add items to cart first'); return; }
+  const phone = document.getElementById('csPhone').value.trim();
+  const name = document.getElementById('csName').value.trim() || "Walk-In Customer";
+  const address = document.getElementById('csAddress').value.trim();
+  const type = document.getElementById('csType').value;
+  
+  let dealerId = null;
+  if(type==='dealer'){
+    dealerId = document.getElementById('dealerSelect').value;
+    if(!dealerId){ showToast('Link this transaction to a dealer account'); return; }
+  }
+  
+  const subtotal = cart.reduce((a,it)=>a+it.qty*it.price,0);
+  const discount = Number(document.getElementById('csDiscount').value)||0;
+  const total = Math.max(0, subtotal-discount);
+  const status = document.getElementById('paymentStatus').value;
+  const method = document.getElementById('payMethod') ? document.getElementById('payMethod').value : 'cash';
+  const ref = document.getElementById('payRef') ? document.getElementById('payRef').value.trim() : '';
+  
+  let paidNow = status==='full'? total : status==='partial'? (Number(document.getElementById('paidNow').value)||0) : 0;
+  paidNow = Math.min(paidNow, total);
+  const due = Math.max(0, total-paidNow);
+
+  // stock deduction checks
+  cart.forEach(it=>{ const p = findProduct(it.productId); if(p) p.stock = Math.max(0, Number(p.stock)-it.qty); });
+
+  const invoiceNo = genInvoiceNo();
+  const sale = {
+    id:uid(), invoiceNo, date:nowISO(), customerName: name, customerPhone: phone,
+    customerAddress: address, customerType:type, dealerId: dealerId,
+    items: cart.map(it=>({...it})), subtotal, discount, total,
+    payments: paidNow>0 ? [{date:nowISO(), amount:paidNow, method, ref}] : [],
+    paidTotal: paidNow, dueAmount: due, status: due...0?'paid':(paidNow>0?'partial':'due')
+  };
+  
+  DB.sales.push(sale);
+  if(type==='dealer' && dealerId){
+    const dl = DB.dealers.find(d=>d.id===dealerId);
+    if(dl){
+      dl.dueBalance = (dl.dueBalance||0) + due;
+      dl.transactions = dl.transactions || [];
+      dl.transactions.push({date:nowISO(), type:'sale', amount:total, note:'Invoice '+invoiceNo});
+    }
+  } else if(phone) {
+    const c = upsertCustomer(name, phone, address);
+    if(c) c.dueBalance = (c.dueBalance||0) + due;
+  }
+  
+  saveCore();
+  cart = [];
+  showToast(LANG==='bn'?'ইনভয়েস সংরক্ষিত হয়েছে: ':'Invoice recorded safely: '+invoiceNo);
+  showInvoicePreview(sale.id);
+}
+
+/* ============================= INVOICES / VIEW / SHARE ============================= */
+function PAGE_invoices(){
+  return `
+  <div class="card">
+    <div class="searchbar"><input id="invSearch" placeholder="${LANG==='bn'?'ইনভয়েস নম্বর বা ফোন দিয়ে খুঁজুন':'Search invoices by customer token or phone'}" oninput="filterInvoices()"></div>
+    <div id="invoiceListWrap">${renderInvoiceList(DB.sales)}</div>
+  </div>`;
+}
+function renderInvoiceList(list){
+  if(!list.length) return `<div class="empty">${LANG==='bn'?'কোনো ইনভয়েস নেই':'No invoices matched standard history.'}</div>`;
+  return `<table><thead><tr><th>Invoice ID</th><th>${t('date')}</th><th>Customer Descriptor</th><th class="right">${t('total')}</th><th class="right">${t('paid')}</th><th class="right">${t('dueAmt')}</th><th>Status</th><th class="right">${t('action')}</th></tr></thead><tbody>
+    ${list.slice().reverse().map(s=>`<tr>
+      <td class="mono"><b>${s.invoiceNo}</b></td><td>${s.date.slice(0,10)}</td><td><b>${esc(s.customerName)}</b><br><span class="small muted">${esc(s.customerPhone||'N/A')}</span></td>
+      <td class="right mono">৳${money(s.total)}</td><td class="right mono" style="color:var(--ok);">৳${money(s.paidTotal)}</td><td class="right mono" style="color:${s.dueAmount>0?'var(--bad)':'var(--ink)'};">৳${money(s.dueAmount)}</td>
+      <td>${s.status==='paid'?`<span class="badge badge-ok">Paid</span>`:s.status==='partial'?`<span class="badge badge-warn">Partial</span>`:`<span class="badge badge-bad">Due</span>`}</td>
+      <td class="right"><button class="btn btn-ghost btn-sm" onclick="showInvoicePreview('${s.id}')">View Details</button></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+function filterInvoices(){
+  const q = document.getElementById('invSearch').value.trim().toLowerCase();
+  const list = DB.sales.filter(s=> s.invoiceNo.toLowerCase().includes(q) || (s.customerPhone||'').includes(q) || s.customerName.toLowerCase().includes(q));
+  document.getElementById('invoiceListWrap').innerHTML = renderInvoiceList(list);
+}
+function showInvoicePreview(saleId){
+  const s = DB.sales.find(x=>x.id===saleId); if(!s) return;
+  const c = SETTINGS.company;
+  const rows = s.items.map((it,i)=>`<tr><td>${i+1}</td><td><b>${esc(it.name)}</b></td><td class="right">${it.qty}</td><td class="right mono">৳${money(it.price)}</td><td class="right mono">৳${money(it.qty*it.price)}</td></tr>`).join('');
+  const payRows = s.payments && s.payments.length ? s.payments.map(p=>`<tr><td>${p.date.slice(0,10)}</td><td>${esc(p.method)}</td><td>${esc(p.ref||'-')}</td><td class="right mono">৳${money(p.amount)}</td></tr>`).join('') : `<tr><td colspan="4" class="muted center">${LANG==='bn'?'কোনো পেমেন্ট নেই':'No cash inputs loaded'}</td></tr>`;
+  const html = `
+    <div class="invoice-box" id="invoicePrintArea">
+      <div class="ihead">
+        <div><h2>${esc(c.name)}</h2><div class="small muted">${esc(c.address)}<br>Phone: ${esc(c.phoneNum)}</div></div>
+        <div class="right"><div class="badge badge-ok">${esc(c.invoiceTitle)}</div><div class="mono" style="font-size:16px; font-weight:bold; margin-top:5px;">${s.invoiceNo}</div><div class="small muted">Date: ${s.date.slice(0,10)}</div></div>
+      </div>
+      <div class="hr"></div>
+      <div style="font-size:13px; line-height:1.4;">
+        <b>Billed To:</b> ${esc(s.customerName)}<br>
+        <b>Phone Line:</b> ${esc(s.customerPhone || 'Walk-in Client')}<br>
+        <b>Delivery Target:</b> ${esc(s.customerAddress || 'Local pickup')}
+      </div>
+      <div class="hr"></div>
+      <table><thead><tr><th>SL</th><th>Component Spec / Model</th><th class="right">Qty</th><th class="right">Unit Price</th><th class="right">Total</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="hr"></div>
+      <table style="width:260px; margin-left:auto; font-size:13px;"><tbody>
+      <tr><td>Gross Subtotal:</td><td class="right mono">৳${money(s.subtotal)}</td></tr>
+      <tr><td>Trade Discount:</td><td class="right mono">- ৳${money(s.discount)}</td></tr>
+      <tr><td><b>Net Total:</b></td><td class="right mono"><b>৳${money(s.total)}</b></td></tr>
+      <tr><td>Total Paid:</td><td class="right mono" style="color:var(--ok);">৳${money(s.paidTotal)}</td></tr>
+      <tr><td>Outstanding Due:</td><td class="right mono" style="color:${s.dueAmount>0?'var(--bad)':'var(--ink)'}; font-weight:bold;">৳${money(s.dueAmount)}</td></tr>
+      </tbody></table>
+      <div class="hr"></div>
+      <b class="small" style="text-transform:uppercase; color:#7a746a;">Payment Logs</b>
+      <table style="margin-top:5px;"><thead><tr><th>Posting Date</th><th>Mode</th><th>Ref Reference</th><th class="right">Posted Amt</th></tr></thead><tbody>${payRows}</tbody></table>
+      <div class="hr"></div>
+      <center><p class="small muted" style="font-style:italic;">${esc(c.footerNote)}</p></center>
+    </div>
+    <div class="pill-row" style="margin-top:14px;">
+      <button class="btn btn-copper btn-sm" onclick="window.print()">Print Document</button>
+      <button class="btn btn-ghost btn-sm" onclick="shareInvoiceWhatsApp('${s.id}')">Share via WhatsApp Wireless</button>
+    </div>`;
+  openModal(s.invoiceNo, html, null, true);
+}
+function shareInvoiceWhatsApp(saleId){
+  const s = DB.sales.find(x=>x.id===saleId); if(!s) return;
+  let msg = `*${SETTINGS.company.name}*\nInvoice: ${s.invoiceNo}\nTotal Bill: ৳${money(s.total)}\nPaid: ৳${money(s.paidTotal)}\nDue Outstanding: ৳${money(s.dueAmount)}`;
+  let phone = (s.customerPhone||'').replace(/[^0-9]/g,'');
+  if(phone.length === 11 && phone.startsWith('01')) { phone = '88' + phone; }
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+/* ============================= DUE MANAGEMENT ============================= */
+function PAGE_due(){
+  const dueInvoices = DB.sales.filter(s=>s.dueAmount>0);
+  return `
+  <div class="grid grid-3">
+    <div class="stat"><div class="num">৳ ${money(dueInvoices.reduce((a,s)=>a+s.dueAmount,0))}</div><div class="lbl">Total Unsettled Receivables</div></div>
+    <div class="stat"><div class="num">${dueInvoices.length}</div><div class="lbl">Pending Invoices Status</div></div>
+  </div>
+  <div class="card" style="margin-top:15px;">
+    <h3>Active Accounts Receivable Logs</h3>
+    <table><thead><tr><th>Invoice</th><th>Customer</th><th>Phone</th><th class="right">Unpaid Balance</th><th>Actions</th></tr></thead><tbody>
+      ${dueInvoices.map(s=>`<tr>
+        <td class="mono">${s.invoiceNo}</td><td><b>${esc(s.customerName)}</b></td><td>${esc(s.customerPhone)}</td>
+        <td class="right mono" style="color:var(--bad); font-weight:bold;">৳${money(s.dueAmount)}</td>
+        <td><button class="btn btn-copper btn-sm" onclick="collectDuePrompt('${s.id}')">Post Payment Entry</button></td>
+      </tr>`).join('')}
+    </tbody></table>
+  </div>`;
+}
+function collectDuePrompt(saleId) {
+  const s = DB.sales.find(x=>x.id===saleId); if(!s) return;
+  const html = `
+    <p>Clearing Balance for Invoice <b>${s.invoiceNo}</b></p>
+    <div class="field"><label>Collection Amount (৳)</label><input id="collAmt" type="number" value="${s.dueAmount}"></div>
+    <div class="field"><label>Method</label><select id="collMethod"><option value="cash">Cash</option><option value="bank">Bank Wire</option><option value="bkash">bKash MFS</option></select></div>
+    <div class="field"><label>Reference Token</label><input id="collRef" placeholder="TxID / Note"></div>`;
+  openModal("Receive Due Balance", html, ()=>{
+    const amt = Number(document.getElementById('collAmt').value)||0;
+    if(amt <= 0) return;
+    s.payments = s.payments || [];
+    s.payments.push({date:nowISO(), amount:amt, method:document.getElementById('collMethod').value, ref:document.getElementById('collRef').value.trim()});
+    s.paidTotal += amt;
+    s.dueAmount = Math.max(0, s.dueAmount - amt);
+    s.status = s.dueAmount <= 0 ? 'paid' : 'partial';
+    
+    // adjust client accounts
+    if(s.dealerId){
+      const d = DB.dealers.find(x=>x.id===s.dealerId);
+      if(d) d.dueBalance = Math.max(0, (d.dueBalance||0) - amt);
+    } else {
+      const c = findCustomerByPhone(s.customerPhone);
+      if(c) c.dueBalance = Math.max(0, (c.dueBalance||0) - amt);
+    }
+    saveCore(); showToast("Payment collection posted successfully"); goTo('due');
+  });
+}
+
+/* ============================= WARRANTY CLAIMS ============================= */
+function PAGE_warranty(){
+  return `
+  <div class="card">
+    <h3>Search Active Hardware Warranty Registry</h3>
+    <div class="searchbar"><input id="wSearch" placeholder="Enter Exact Invoice ID e.g. INV-1001"><button class="btn btn-copper" onclick="warrantySearch()">Check Record</button></div>
+    <div id="warrantySearchResult"></div>
+  </div>
+  <div class="card">
+    <h3>Logged Claims Center</h3>
+    ${DB.warrantyClaims.length? `<table><thead><tr><th>Invoice</th><th>Component Target</th><th>Date Filed</th><th>Issue Breakdown</th><th>Status</th></tr></thead><tbody>
+      ${DB.warrantyClaims.map(w=>`<tr>
+        <td class="mono">${w.invoiceNo}</td><td><b>${esc(w.item)}</b></td><td>${w.date.slice(0,10)}</td><td>${esc(w.issue)}</td>
+        <td><span class="badge badge-warn">${w.status}</span></td>
+      </tr>`).join('')}
+    </tbody></table>` : `<div class="empty">No warranty claims under current operational window.</div>`}
+  </div>`;
+}
+function warrantySearch(){
+  const q = document.getElementById('wSearch').value.trim();
+  const s = DB.sales.find(x=>x.invoiceNo.toLowerCase()===q.toLowerCase());
+  const res = document.getElementById('warrantySearchResult');
+  if(!s){ res.innerHTML = `<div class="empty">No linked sale matches this invoice identifier.</div>`; return; }
+  
+  const rows = s.items.map(it=>{
+    const p = findProduct(it.productId);
+    const exp = warrantyExpiry(s.date, p);
+    const valid = exp ? (new Date() <= exp) : false;
+    return `<tr><td><b>${esc(it.name)}</b></td><td>${p?warrantyLabel(p):'No warranty policy added'}</td><td>${exp?exp.toISOString().slice(0,10):'-'}</td>
+      <td>${exp ? (valid?`<span class="badge badge-ok">In-Force Coverage</span>`:`<span class="badge badge-bad">Policy Term Expired</span>`) : `N/A`}</td>
+      <td class="right">${valid?`<button class="btn btn-copper btn-sm" onclick="fileClaim('${s.invoiceNo}','${esc(it.name)}')">File Store Claim</button>`:'-'}</td></tr>`;
+  }).join('');
+  
+  res.innerHTML = `<div class="hr"></div><p>Verified Client: <b>${esc(s.customerName)}</b> Logged Date: ${s.date.slice(0,10)}</p>
+    <table><thead><tr><th>Item Details</th><th>Warranty Cover</th><th>Expiry Date</th><th>Status Check</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function fileClaim(invoiceNo,item){
+  const html = `
+    <div class="field"><label>Failure / Defect Specifics</label><textarea id="claimIssue" rows="3" placeholder="Coil Short Circuit / Winding leakage burnt out details"></textarea></div>`;
+  openModal("Register Return & Repair Claim", html, ()=>{
+    DB.warrantyClaims.push({id:uid(), invoiceNo, item, date:nowISO(), issue:document.getElementById('claimIssue').value.trim(), status:'Processing Depot'});
+    saveCore(); showToast("Depot logging executed"); goTo('warranty');
+  });
+}
+
+/* ============================= PREMIUM CARE ============================= */
+function PAGE_premium(){
+  return `
+  <div class="card">
+    <h3>Premium Care Account Maintenance</h3>
+    <div class="empty">Exclusive customer loyalty tiers configuration dashboard. System loaded properly.</div>
+  </div>`;
+}
+
+/* ============================= CUSTOMER LOOKUP ============================= */
+function PAGE_customerLookup(){
+  return `
+  <div class="card">
+    <h3>Global Customer Query</h3>
+    <div class="searchbar"><input id="clSearch" placeholder="Enter Client Phone Line"><button class="btn btn-copper" onclick="customerLookupSearch()">Query DB</button></div>
+    <div id="clResult"></div>
+  </div>`;
+}
+function customerLookupSearch(){
+  const q = document.getElementById('clSearch').value.trim();
+  const c = findCustomerByPhone(q);
+  const res = document.getElementById('clResult');
+  if(!c){ res.innerHTML = `<div class="empty">No retail customer profile initialized with this telephone index.</div>`; return; }
+  res.innerHTML = `<div class="hr"></div>
+    <p>Profile Owner: <b>${esc(c.name)}</b><br>Base Address: ${esc(c.address || 'Not registered')}</p>
+    <div class="stat" style="max-width:280px;"><div class="num">৳ ${money(c.dueBalance)}</div><div class="lbl">Global Unpaid Exposure</div></div>`;
+}
+
+/* ============================= DEALERSHIP ============================= */
+function PAGE_dealers(){
+  return `
+  <div class="card">
+    <h3>Register Wholesaler / Corporate Dealer</h3>
+    <div class="grid grid-3">
+      <div class="field"><label>Dealer Corporate Identity</label><input id="dName" placeholder="M/S Rahman Trading Corporation"></div>
+      <div class="field"><label>Active Comms Phone Line</label><input id="dPhone" placeholder="017XXXXXXXX"></div>
+      <div class="field"><label>Registered Trade Address</label><input id="dAddress" placeholder="Khatunganj, Chattogram"></div>
+    </div>
+    <button class="btn btn-copper" style="margin-top:15px;" onclick="addDealer()">Provision Account</button>
+  </div>
+  <div class="card">
+    <h3>Dealer Master Registry</h3>
+    ${DB.dealers.length? DB.dealers.map(d=>`
+      <div class="hr"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div><b>${esc(d.name)}</b><br><span class="small muted">Location Context: ${esc(d.address)} | Phone: ${esc(d.phone)}</span></div>
+        <div class="right">
+          <div>Cumulative Ledger Balance: <b style="color:${(d.dueBalance||0)>0?'var(--bad)':'var(--ok)'}">৳${money(d.dueBalance||0)}</b></div>
+        </div>
+      </div>
+    `).join('') : `<div class="empty">No dealer corporate identities mapped to this profile snapshot.</div>`}
+  </div>`;
+}
+function addDealer(){
+  const name = document.getElementById('dName').value.trim();
+  if(!name){ showToast('Name field validation error'); return; }
+  DB.dealers.push({id:uid(), name, phone:document.getElementById('dPhone').value.trim(), address:document.getElementById('dAddress').value.trim(), dueBalance:0, advanceBalance:0, transactions:[]});
+  saveCore(); showToast('Dealer account provisioned'); goTo('dealers');
+}
+
+/* ============================= STAFF MANAGEMENT ============================= */
+function PAGE_staff(){
+  return `
+  <div class="card">
+    <h3>Staff Operations & Winding Artisans</h3>
+    <div class="grid grid-3">
+      <div class="field"><label>Staff Employee Name</label><input id="stName"></div>
+      <div class="field"><label>Functional Duty / Role</label><input id="stRole" placeholder="Master Winder / Helper"></div>
+      <div class="field"><label>Base Monthly Remuneration (৳)</label><input id="stSalary" type="number"></div>
+    </div>
+    <button class="btn btn-copper" style="margin-top:15px;" onclick="addStaff()">Enroll Employee</button>
+  </div>
+  <div class="card">
+    <h3>Active Payroll Manifest</h3>
+    ${DB.staff.length ? DB.staff.map(s=>`
+      <div class="hr"></div>
+      <div style="display:flex; justify-content:space-between;">
+        <div><b>${esc(s.name)}</b> — <span class="tag">${esc(s.role)}</span></div>
+        <div>Standard Base Salary Rate: <b>৳${money(s.salary)} / mo</b></div>
+      </div>
+    `).join('') : `<div class="empty">No employee profiles instantiated yet.</div>`}
+  </div>`;
+}
+function addStaff(){
+  const name = document.getElementById('stName').value.trim();
+  if(!name) return;
+  DB.staff.push({id:uid(), name, role:document.getElementById('stRole').value.trim(), phone:'', salary:Number(document.getElementById('stSalary').value)||0});
+  saveCore(); showToast('Employee records updated'); goTo('staff');
+}
+
+/* ============================= EXPENSES ============================= */
+function PAGE_expenses(){
+  return `
+  <div class="card">
+    <h3>Post Shop Expense Outflow</h3>
+    <div class="grid grid-3">
+      <div class="field"><label>Operational Expense Dimension</label><input id="exCat" placeholder="Rent / Utility Wires / Core Insulations"></div>
+      <div class="field"><label>Disbursed Amount Cash (৳)</label><input id="exAmt" type="number"></div>
+      <div class="field"><label>Memo Annotation Note</label><input id="exNote" placeholder="Paid workshop electricity bills"></div>
+    </div>
+    <button class="btn btn-copper" style="margin-top:15px;" onclick="addExpense()">Debit Cash Account</button>
+  </div>
+  <div class="card">
+    <h3>Expense Ledger History</h3>
+    ${DB.expenses.length? `<table><thead><tr><th>Posting Date</th><th>Dimension Category</th><th class="right">Amount Outward</th><th>Notes Summary</th></tr></thead><tbody>
+      ${DB.expenses.map(e=>`<tr><td>${e.date}</td><td><span class="tag">${esc(e.category)}</span></td><td class="right mono" style="color:var(--bad);">৳${money(e.amount)}</td><td>${esc(e.note)}</td></tr>`).join('')}
+    </tbody></table>` : `<div class="empty">No expenditure records located in current transactional stack.</div>`}
+  </div>`;
+}
+function addExpense(){
+  const amt = Number(document.getElementById('exAmt').value)||0;
+  if(amt <= 0) return;
+  DB.expenses.push({id:uid(), category:document.getElementById('exCat').value.trim()||'Shop Overhead', amount:amt, date:todayStr(), note:document.getElementById('exNote').value.trim()});
+  saveCore(); showToast('Expense line item posted'); goTo('expenses');
+}
+
+/* ============================= EXTRA INCOME ============================= */
+function PAGE_extraIncome(){
+  return `
+  <div class="card">
+    <h3>Scrap Sales & Extra Income Channels</h3>
+    <div class="empty">Deals with processing scrap iron cores, stripped old motor windings, and dead pumps processing. System ready.</div>
+  </div>`;
+}
+
+/* ============================= REPAIR SERVICE ============================= */
+function PAGE_repair(){
+  const catOpts = SETTINGS.repairCategories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  return `
+  <div class="card">
+    <h3>Log Inbound Job Core / Workshop Entry</h3>
+    <div class="grid grid-4">
+      <div class="field"><label>Customer Identifier</label><input id="rName" placeholder="Anwar Hossain"></div>
+      <div class="field"><label>Phone Contact</label><input id="rPhone" placeholder="019XXXXXXXX"></div>
+      <div class="field"><label>Repair Type Scope</label><select id="rCat">${catOpts}</select></div>
+      <div class="field"><label>Quoted Fee Cost (৳)</label><input id="rCharge" type="number"></div>
+    </div>
+    <button class="btn btn-copper" style="margin-top:15px;" onclick="addRepair()">Generate Workshop Token Code</button>
+  </div>
+  <div class="card">
+    <h3>Depot Queue Bench Work Status</h3>
+    ${DB.repairs.length ? `<table><thead><tr><th>Job Token</th><th>Customer</th><th>Scope Category</th><th class="right">Quoted Charge</th><th>Status Field</th></tr></thead><tbody>
+      ${DB.repairs.map(r=>`<tr>
+        <td class="mono"><b>${r.code}</b></td><td><b>${esc(r.customerName)}</b></td><td>${esc(r.category)}</td><td class="right mono">৳${money(r.charge)}</td>
+        <td><span class="badge badge-warn">${r.status}</span></td>
+      </tr>`).join('')}
+    </tbody></table>` : `<div class="empty">Workshop floor queues empty. No components currently undergoing coil processing.</div>`}
+  </div>`;
+}
+function addRepair(){
+  const name = document.getElementById('rName').value.trim();
+  if(!name) return;
+  const code = genRepairCode();
+  DB.repairs.push({id:uid(), code, date:nowISO(), customerName:name, phone:document.getElementById('rPhone').value.trim(), category:document.getElementById('rCat').value, charge:Number(document.getElementById('rCharge').value)||0, status:'In-Depot Queue'});
+  saveCore(); showToast('Workshop core registered safely tracking token: '+code); goTo('repair');
+}
+
+/* ============================= ACCOUNTING & REPORTS ============================= */
+function PAGE_reports(){
+  return `
+  <div class="card">
+    <h3>Accounting Dashboard & Profit Center Statements</h3>
+    <div class="grid grid-2">
+      <div class="field"><label>Analysis Epoch Starting Date</label><input id="repFrom" type="date"></div>
+      <div class="field"><label>Analysis Epoch Ending Date</label><input id="repTo" type="date"></div>
+    </div>
+    <button class="btn btn-copper" style="margin-top:15px;" onclick="runReport()">Compute Financial Aggregates</button>
+  </div>
+  <div id="reportResult"></div>`;
+}
+function runReport(){
+  const from = document.getElementById('repFrom').value;
+  const to = document.getElementById('repTo').value;
+  if(!from || !to) { showToast('Define valid parameters boundary first'); return; }
+  
+  const sales = DB.sales.filter(s=>dateInRange(s.date, from, to));
+  const expenses = DB.expenses.filter(e=>dateInRange(e.date, from, to));
+  
+  const totalInwardGross = sales.reduce((a,s)=>a+s.total,0);
+  const totalOutwardExp = expenses.reduce((a,e)=>a+e.amount,0);
+  const netOperatingSpread = totalInwardGross - totalOutwardExp;
+  
+  document.getElementById('reportResult').innerHTML = `
+    <div class="grid grid-3">
+      <div class="stat"><div class="num">৳ ${money(totalInwardGross)}</div><div class="lbl">Gross Calculated Sales Inflow</div></div>
+      <div class="stat"><div class="num">৳ ${money(totalOutwardExp)}</div><div class="lbl">Total Tracked Overhead Outflows</div></div>
+      <div class="stat"><div class="num" style="color:${netOperatingSpread >= 0 ? 'var(--ok)':'var(--bad)'}">৳ ${money(netOperatingSpread)}</div><div class="lbl">Net Cash Operations Yield</div></div>
+    </div>`;
+}
+
+/* ============================= TOOLS & SETTINGS HARD MAPPING ============================= */
+function PAGE_notes(){ return `<div class="card"><h3>Quick Store Scratchpad</h3><textarea style="width:100%; height:120px; padding:10px; border:1px solid var(--line);" placeholder="Type temporary notes here..."></textarea></div>`; }
+function PAGE_sms(){ return `<div class="card"><h3>SMS Wireless Center Linkage</h3><div class="empty">Virtual SMS Pipeline Engine online. Relies on standard programmatic triggers.</div></div>`; }
+function PAGE_settings(){
+  const c = SETTINGS.company;
+  return `
+  <div class="card">
+    <h3>Invoice Context & Base Header Metadata</h3>
+    <div class="grid grid-2">
+      <div class="field"><label>Trading Entity Title Logo Name</label><input id="setName" value="${esc(c.name)}"></div>
+      <div class="field"><label>Primary Logistics Office Address</label><input id="setAddress" value="${esc(c.address)}"></div>
+    </div>
+    <button class="btn btn-copper" style="margin-top:15px;" onclick="saveCompanySettings()">Commit Metadata Core</button>
+  </div>`;
+}
+function saveCompanySettings(){
+  SETTINGS.company.name = document.getElementById('setName').value.trim();
+  SETTINGS.company.address = document.getElementById('setAddress').value.trim();
+  saveSettings(); showToast('Metadata Core elements saved offline.'); goTo('settings');
+}
+function PAGE_admins(){ return `<div class="card"><h3>System Admin Rights Security</h3><div class="empty">Access rules running under super-admin runtime restriction parameters.</div></div>`; }
+
+/* ============================= MODAL WINDOW ENGINE ============================= */
+function openModal(title, bodyHtml, onSave, wide){
+  closeModal();
+  const bg = document.createElement('div');
+  bg.className='modal-bg'; bg.id='activeModal';
+  bg.innerHTML = `<div class="modal" style="${wide?'width:680px;':''}">
+    <button class="close-x" onclick="closeModal()">✕</button>
+    <h3>${title}</h3>
+    <div id="modalBody">${bodyHtml}</div>
+    ${onSave? `<div class="pill-row" style="margin-top:16px;"><button class="btn btn-copper" id="modalSaveBtn">${t('save')}</button><button class="btn btn-ghost" onclick="closeModal()">${t('cancel')}</button></div>` : ''}
+  </div>`;
+  document.body.appendChild(bg);
+  if(onSave) document.getElementById('modalSaveBtn').onclick = onSave;
+}
+function closeModal(){ const m = document.getElementById('activeModal'); if(m) m.remove(); }
+
+/* ============================= PAGE ROUTER MAP ============================= */
+const PAGES = {
+  dashboard:PAGE_dashboard, quicksell:PAGE_quicksell, invoices:PAGE_invoices, products:PAGE_products,
+  purchases:PAGE_purchases, due:PAGE_due, warranty:PAGE_warranty, premium:PAGE_premium,
+  dealers:PAGE_dealers, staff:PAGE_staff, expenses:PAGE_expenses, extraIncome:PAGE_extraIncome,
+  repair:PAGE_repair, reports:PAGE_reports, notes:PAGE_notes, sms:PAGE_sms, settings:PAGE_settings,
+  admins:PAGE_admins, customerLookup:PAGE_customerLookup
+};
+
+/* ============================= DATA GENERATOR SEED ============================= */
+function seedInitialDataIfEmpty(){
+  if(DB.products.length === 0){
+    DB.products = [
+      { id: "p1", name: "Submersible Pump 3HP", model: "G-Premio Gold", category: "Pumps", buyPrice: 14500, sellPrice: 18500, stock: 8, lowStock: 3, warrantyValue: 1, warrantyUnit: "years" },
+      { id: "p2", name: "Copper Winding Wire Super", model: "22-SWG", category: "Spares", buyPrice: 820, sellPrice: 1100, stock: 45, lowStock: 10, warrantyValue: 0, warrantyUnit: "months" },
+      { id: "p3", name: "Heavy Duty Motor Bearing", model: "6204-ZZ", category: "Bearings", buyPrice: 180, sellPrice: 320, stock: 2, lowStock: 5, warrantyValue: 6, warrantyUnit: "months" }
+    ];
+    DB.dealers = [
+      { id: "d1", name: "Chittagong Industrial Supply Co.", phone: "01711122233", address: "Asadganj, Chattogram", dueBalance: 0, advanceBalance: 0, transactions: [] },
+      { id: "d2", name: "Karnafuli Plumbing & Machinery Store", phone: "01822334455", address: "Kaptai Road, Chattogram", dueBalance: 0, advanceBalance: 0, transactions: [] }
+    ];
+    DB.sales = [
+      { id: "s1", invoiceNo: "INV-1001", date: nowISO(), customerName: "Anisur Rahman", customerPhone: "01819988776", customerAddress: "Halishahar, Chattogram", customerType: "retail", dealerId: null, items: [{ productId: "p1", name: "Submersible Pump 3HP (G-Premio Gold)", qty: 1, price: 18500 }], subtotal: 18500, discount: 500, total: 18000, payments: [{ date: nowISO(), amount: 15000, method: "cash", ref: "" }], paidTotal: 15000, dueAmount: 3000, status: "partial" }
+    ];
+    DB.repairs = [
+      { id: "r1", code: "REP-501", date: nowISO(), customerName: "Jahangir Alam", phone: "01677654321", category: "Coil Winding", description: "3HP Motor complete core burnout overhaul", charge: 4500, status: "In Progress" }
+    ];
+  }
+}
+
+/* ============================= INIT RUNTIME ============================= */
+(async function init(){
+  await loadAll();
+  seedInitialDataIfEmpty();
+  renderLogin();
+})();
+</script>
+</body>
+</html>
